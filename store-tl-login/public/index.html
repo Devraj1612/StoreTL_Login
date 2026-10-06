@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Store sign-in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="aside">
+    <a class="brand-lockup brand-on-dark" href="index.html" aria-label="Shadowfax sign-in"><img src="shadowfax-logo.svg" alt="Shadowfax, Think ahead!"></a>
+    <div>
+      <p class="eyebrow">STORE OPERATIONS</p>
+      <h1>Store team lead sign-in</h1>
+      <p style="color:#b9d6cb">Three things are checked before you get in. Your ID and password, that you are at your store, and that it is really you.</p>
+    </div>
+    <ul class="checks" aria-live="polite">
+      <li class="check" id="ck-cred" data-s="wait"><span class="dot"></span><div><b>ID and password</b><span id="ck-cred-t">Enter them on the right.</span></div></li>
+      <li class="check" id="ck-loc" data-s="wait"><span class="dot"></span><div><b>Store location</b><span id="ck-loc-t">Waiting for location permission.</span></div></li>
+      <li class="check" id="ck-face" data-s="wait"><span class="dot"></span><div><b>Face check</b><span id="ck-face-t">Loading face model…</span></div></li>
+    </ul>
+  </aside>
+
+  <main class="main">
+    <div class="auth-panel">
+      <section class="card auth-card active" id="loginPane" aria-live="polite">
+        <div class="auth-header">
+          <p class="section-kicker"><span>TL</span> STORE ACCESS</p>
+          <h2>Sign in</h2>
+        </div>
+        <div id="msg" class="msg err hidden" role="alert"></div>
+
+        <form id="f" autocomplete="off" novalidate>
+          <div class="field"><label for="loginId">Login ID</label><input id="loginId" autocomplete="username" required></div>
+          <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+
+          <div class="cam">
+            <video id="video" playsinline muted></video>
+            <div class="ph" id="ph">Camera starts when the page loads. Allow camera access.</div>
+          </div>
+
+          <button class="block" id="go" type="submit" disabled>Check face and sign in</button>
+        </form>
+
+        <p class="footer-link muted">New Team lead? <button type="button" class="link-button" id="showSignup">Create a new account</button></p>
+        <p class="footer-link muted">Admin? <a href="admin.html">Open the admin console</a></p>
+      </section>
+
+      <section class="card auth-card hidden" id="signupPane" aria-live="polite">
+        <div class="auth-header">
+          <p class="section-kicker"><span>NEW</span> JOIN THE TEAM</p>
+          <h2>Create your account</h2>
+        </div>
+        <div id="signupMsg" class="msg err hidden" role="alert"></div>
+
+        <form id="signupForm" autocomplete="off" novalidate>
+          <div class="two-col">
+            <div class="field"><label for="signupName">Full name</label><input id="signupName" required></div>
+            <div class="field"><label for="signupPhone">Mobile number</label><input id="signupPhone" type="tel" placeholder="+919876543210" required></div>
+          </div>
+
+          <div class="two-col">
+            <div class="field"><label for="signupId">Login ID</label><input id="signupId" required></div>
+            <div class="field"><label for="signupStore">Store</label><select id="signupStore" required></select></div>
+          </div>
+
+          <div class="two-col">
+            <div class="field"><label for="signupShift">Shift</label><select id="signupShift" required>
+              <option value="">Choose a shift</option>
+              <option value="morning">6:00 AM – 3:00 PM</option>
+              <option value="midday">10:00 AM – 7:00 PM</option>
+              <option value="evening">3:00 PM – 12:30 AM</option>
+            </select></div>
+            <div class="field"><label for="signupPassword">Password</label><input id="signupPassword" type="password" minlength="8" required></div>
+          </div>
+
+          <div class="cam small-cam">
+            <video id="signupVideo" playsinline muted></video>
+            <div class="ph" id="signupPh">Capture your rider photo for quick verification.</div>
+          </div>
+          <div class="signup-photo-preview hidden" id="signupPhotoPreview" aria-live="polite">
+            <img id="signupCapturedPreview" alt="Captured rider photo preview">
+            <span class="preview-label">Photo preview</span>
+          </div>
+
+          <div class="sign-up-actions">
+            <button type="button" class="ghost" id="captureSignupFace">Capture rider photo</button>
+            <span id="signupFaceStatus" class="pill warn">Photo not captured</span>
+          </div>
+
+          <button class="block" id="signupSubmit" type="submit">Create account and sign in</button>
+        </form>
+
+        <p class="footer-link muted"><button type="button" class="link-button" id="showLogin">Back to sign in</button></p>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
+<script src="common.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const video = $('video'), go = $('go'), msg = $('msg');
+const signupVideo = $('signupVideo');
+let pos = null, faceReady = false, signupDescriptor = null, signupPhoto = null;
+
+function setCheck(key, state, text) {
+  $('ck-' + key).dataset.s = state;
+  $('ck-' + key).querySelector('.dot').textContent = state === 'ok' ? '✓' : state === 'bad' ? '!' : '';
+  if (text) $('ck-' + key + '-t').textContent = text;
+}
+function showErr(t) { msg.textContent = t; msg.classList.remove('hidden'); }
+function showSignupErr(t) { $('signupMsg').textContent = t; $('signupMsg').classList.remove('hidden'); }
+function refresh() { go.disabled = !(pos && faceReady); }
+function clearSignupCapturePreview() {
+  $('signupCapturedPreview').removeAttribute('src');
+  $('signupPhotoPreview').classList.add('hidden');
+}
+
+async function loadStoresForSignup() {
+  try {
+    const stores = await api('/api/stores');
+    const groups = new Map();
+    stores.forEach((s) => {
+      if (!groups.has(s.city)) groups.set(s.city, []);
+      groups.get(s.city).push(s);
+    });
+    const html = ['<option value="">Choose a store</option>'];
+    for (const [city, items] of groups) {
+      html.push(`<optgroup label="${esc(city)}">`);
+      items.forEach((store) => html.push(`<option value="${store.id}">${esc(store.store_name)}</option>`));
+      html.push('</optgroup>');
+    }
+    $('signupStore').innerHTML = html.join('');
+  } catch { $('signupStore').innerHTML = '<option value="">No stores added yet</option>'; }
+}
+
+function switchAuthView(showSignup) {
+  $('loginPane').classList.toggle('hidden', showSignup);
+  $('signupPane').classList.toggle('hidden', !showSignup);
+  if (showSignup) {
+    loadStoresForSignup();
+    setTimeout(async () => {
+      try {
+        await Face.load();
+        await Face.startCamera(signupVideo);
+        $('signupPh').classList.add('hidden');
+      } catch (err) {
+        $('signupMsg').textContent = err.message || 'Camera failed to load.';
+        $('signupMsg').classList.remove('hidden');
+      }
+    }, 50);
+  } else {
+    Face.stopCamera(signupVideo);
+    $('signupMsg').classList.add('hidden');
+  }
+}
+
+$('showSignup').onclick = () => switchAuthView(true);
+$('showLogin').onclick = () => switchAuthView(false);
+
+// Location
+(async () => {
+  try {
+    const p = await getPosition();
+    pos = p.coords;
+    setCheck('loc', 'ok', `Location found (±${Math.round(pos.accuracy)} m). The server checks it against your store.`);
+  } catch (e) { setCheck('loc', 'bad', e.message); }
+  refresh();
+})();
+
+// Camera + face model
+(async () => {
+  try {
+    await Face.load();
+    await Face.startCamera(video);
+    $('ph').classList.add('hidden');
+    faceReady = true;
+    setCheck('face', 'ok', 'Camera ready. Look straight at it when you sign in.');
+  } catch (e) { setCheck('face', 'bad', e.message || 'Camera or face model failed to load.'); }
+  refresh();
+})();
+
+$('f').addEventListener('input', () => {
+  const filled = $('loginId').value && $('password').value;
+  setCheck('cred', filled ? 'ok' : 'wait', filled ? 'Ready to verify.' : 'Enter them on the right.');
+});
+
+$('f').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  msg.classList.add('hidden');
+  if (!$('loginId').value.trim() || !$('password').value) return showErr('Enter your login ID and password.');
+  go.disabled = true; go.textContent = 'Checking…';
+  try {
+    const p = await getPosition();
+    pos = p.coords;
+    setCheck('loc', 'ok', `Location found (±${Math.round(pos.accuracy)} m).`);
+
+    const descriptor = await Face.describe(video);
+    if (!descriptor) throw new Error('No face found. Face the camera in good light and try again.');
+
+    await api('/api/login', { method: 'POST', body: {
+      loginId: $('loginId').value.trim(), password: $('password').value,
+      lat: pos.latitude, lng: pos.longitude, accuracy: pos.accuracy, descriptor,
+    }});
+    Face.stopCamera(video);
+    location.href = 'dashboard.html';
+  } catch (e) {
+    showErr(e.message);
+    setCheck('cred', 'bad', 'Sign-in was refused.');
+    go.textContent = 'Check face and sign in'; refresh();
+  }
+});
+
+$('captureSignupFace').onclick = async () => {
+  try {
+    clearSignupCapturePreview();
+    signupDescriptor = null;
+    signupPhoto = null;
+    $('captureSignupFace').textContent = 'Capture rider photo';
+    await Face.load();
+    await Face.startCamera(signupVideo);
+    $('signupPh').classList.add('hidden');
+    const descriptor = await Face.describe(signupVideo, 8);
+    if (!descriptor) throw new Error('Could not detect a clear face. Try again in better light.');
+    signupDescriptor = descriptor;
+    signupPhoto = Face.capturePhoto(signupVideo);
+    $('signupCapturedPreview').src = signupPhoto;
+    $('signupPhotoPreview').classList.remove('hidden');
+    $('captureSignupFace').textContent = 'Retake photo';
+    $('signupFaceStatus').textContent = 'Photo captured';
+    $('signupFaceStatus').className = 'pill good';
+  } catch (e) {
+    signupDescriptor = null;
+    signupPhoto = null;
+    clearSignupCapturePreview();
+    $('captureSignupFace').textContent = 'Capture rider photo';
+    $('signupFaceStatus').textContent = 'Photo not captured';
+    $('signupFaceStatus').className = 'pill warn';
+    showSignupErr(e.message);
+  }
+};
+
+$('signupForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  $('signupMsg').classList.add('hidden');
+
+  const payload = {
+    name: $('signupName').value.trim(),
+    loginId: $('signupId').value.trim(),
+    password: $('signupPassword').value,
+    store_id: Number($('signupStore').value),
+    phone: $('signupPhone').value.trim(),
+    shift_code: $('signupShift').value,
+    descriptor: signupDescriptor,
+    photo_data: signupPhoto,
+  };
+
+  if (!payload.name) return showSignupErr('Enter your full name.');
+  if (!payload.loginId) return showSignupErr('Choose a login ID.');
+  if (String(payload.password).length < 8) return showSignupErr('Password must be at least 8 characters.');
+  if (!payload.store_id) return showSignupErr('Choose your store.');
+  if (!/^[A-Za-z0-9._-]{3,32}$/.test(payload.loginId)) return showSignupErr('ID must be 3–32 letters, numbers, dot, dash or underscore.');
+  if (!/^[+][1-9][0-9]{7,14}$/.test(payload.phone)) return showSignupErr('Use a valid mobile number in international format.');
+  if (!payload.shift_code) return showSignupErr('Choose your shift.');
+  if (!signupDescriptor) return showSignupErr('Capture your rider photo before creating the account.');
+  if (!signupPhoto) return showSignupErr('Capture your rider photo before creating the account.');
+
+  try {
+    await api('/api/register', { method: 'POST', body: payload });
+    Face.stopCamera(signupVideo);
+    location.href = 'dashboard.html';
+  } catch (e) {
+    showSignupErr(e.message);
+  }
+});
+</script>
+</body>
+</html>

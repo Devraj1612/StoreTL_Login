@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Admin sign-in -->
+<section id="loginView" class="login-only">
+  <form class="card" id="loginForm">
+    <img class="login-logo" src="shadowfax-logo.svg" alt="Shadowfax, Think ahead!">
+    <p class="section-kicker"><span>ADMIN</span> STORE OPERATIONS</p>
+    <h2>Admin sign-in</h2>
+    <div id="loginMsg" class="msg err hidden" role="alert"></div>
+    <div class="field"><label for="au">Username</label><input id="au" autocomplete="username" required></div>
+    <div class="field"><label for="ap">Password</label><input id="ap" type="password" autocomplete="current-password" required></div>
+    <button class="block" type="submit">Sign in</button>
+    <p class="footer-link muted">Team lead? <a href="index.html">Go to store sign-in</a></p>
+  </form>
+</section>
+
+<!-- Admin app -->
+<section id="appView" class="hidden">
+  <header class="topbar">
+    <a class="brand-lockup" href="admin.html" aria-label="Shadowfax admin console"><img src="shadowfax-logo.svg" alt="Shadowfax, Think ahead!"></a>
+    <div class="topbar-actions"><span class="user-chip">Admin <span id="who"></span></span><button id="logout" class="button-light" type="button">Sign out</button></div>
+  </header>
+  <section class="admin-overview" aria-label="Operations overview">
+    <div class="admin-overview-copy"><p class="section-kicker"><span>OPS</span> STORE NETWORK</p><h1>Operations desk</h1><p>Stores, team access, and daily performance.</p></div>
+    <div class="admin-stats" aria-live="polite">
+      <div class="admin-stat"><span>Stores</span><strong id="adminStoreCount">—</strong></div>
+      <div class="admin-stat"><span>Team leads</span><strong id="adminLeadCount">—</strong></div>
+      <div class="admin-stat"><span>Active</span><strong id="adminActiveCount">—</strong></div>
+      <div class="admin-stat"><span>Faces enrolled</span><strong id="adminFaceCount">—</strong></div>
+    </div>
+  </section>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="users" aria-selected="true">Team leads</button>
+    <button class="tab" role="tab" data-tab="stores" aria-selected="false">Stores</button>
+    <button class="tab" role="tab" data-tab="performance" aria-selected="false">Performance</button>
+    <button class="tab" role="tab" data-tab="logs" aria-selected="false">Sign-in log</button>
+    <button class="tab" role="tab" data-tab="account" aria-selected="false">Account</button>
+  </nav>
+
+  <main class="wrap">
+    <div id="toast" class="msg ok hidden" role="status"></div>
+
+    <!-- Stores -->
+    <div id="tab-stores" class="hidden">
+      <div class="panel">
+        <h2 id="storeFormTitle">Add a store</h2>
+        <p class="muted">Team leads can only sign in within the range of their store's coordinates.</p>
+        <form id="storeForm">
+          <input type="hidden" id="sId">
+          <div class="row">
+            <div class="field"><label for="sCity">City</label><input id="sCity" required></div>
+            <div class="field"><label for="sName">Store name</label><input id="sName" required></div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="sLat">Latitude</label><input id="sLat" type="number" step="any" required></div>
+            <div class="field"><label for="sLng">Longitude</label><input id="sLng" type="number" step="any" required></div>
+            <div class="field"><label for="sRad">Allowed range (metres)</label><input id="sRad" type="number" min="20" max="5000" value="100" required></div>
+          </div>
+          <div class="tools">
+            <button type="submit" id="storeSave">Save store</button>
+            <button type="button" class="ghost" id="useHere">Use my current location</button>
+            <button type="button" class="ghost hidden" id="storeCancel">Cancel edit</button>
+          </div>
+        </form>
+
+        <div class="tools" style="margin-top:1rem; align-items:flex-end; gap:.75rem; flex-wrap:wrap;">
+          <div class="field" style="flex:1; min-width:220px; margin:0;">
+            <label for="storeCsvInput">Upload stores CSV</label>
+            <input id="storeCsvInput" type="file" accept=".csv,text/csv">
+          </div>
+          <button type="button" class="ghost" id="importStoresCsv">Import CSV</button>
+        </div>
+        <p class="muted">CSV columns: city, store_name, lat, lng, radius_m. Existing stores with the same city and name will be updated.</p>
+      </div>
+      <div class="panel"><h2>All stores</h2><div class="tablebox" id="storeTable"></div></div>
+    </div>
+
+    <!-- Team leads -->
+    <div id="tab-users">
+      <div class="panel">
+        <h2>Add a team lead</h2>
+        <p class="muted">Each team lead gets their own ID and password, tied to one store. Enrol their face so they can sign in.</p>
+        <form id="userForm" autocomplete="off">
+          <div class="row">
+            <div class="field"><label for="uName">Full name</label><input id="uName" required></div>
+            <div class="field"><label for="uStore">Store</label><select id="uStore" required></select></div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="uId">Login ID</label><input id="uId" required pattern="[A-Za-z0-9._\-]{3,32}"></div>
+            <div class="field"><label for="uPhone">Mobile number (international format)</label><input id="uPhone" type="tel" placeholder="+919876543210" pattern="\+[1-9][0-9]{7,14}" required></div>
+            <div class="field"><label for="uShift">Shift</label><select id="uShift" required>
+              <option value="">Choose a shift</option><option value="morning">6:00 AM – 3:00 PM</option>
+              <option value="midday">10:00 AM – 7:00 PM</option><option value="evening">3:00 PM – 12:30 AM</option>
+            </select></div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="uPass">Password</label>
+              <div class="tools"><input id="uPass" class="grow" type="text" minlength="8" required style="flex:1">
+              <button type="button" class="ghost small" id="genPass">Generate</button></div></div>
+          </div>
+          <div class="tools">
+            <button type="button" class="ghost" id="enrolNew">Enrol face</button>
+            <span id="enrolStatus" class="pill warn">Face not captured</span>
+            <button type="submit" style="margin-left:auto">Create team lead</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="tools" style="margin-bottom:.75rem">
+          <h2 style="margin:0">All team leads</h2>
+          <select id="cityFilter" class="grow" style="max-width:220px" aria-label="Filter by city"></select>
+          <input id="search" class="grow" style="max-width:240px" placeholder="Search name or ID" aria-label="Search">
+        </div>
+        <div class="tablebox" id="userTable"></div>
+      </div>
+    </div>
+
+    <!-- Logs -->
+    <div id="tab-logs" class="hidden">
+      <div class="panel">
+        <div class="tools" style="margin-bottom:.75rem"><h2 style="margin:0">Latest sign-in attempts</h2><button class="ghost small" id="refreshLogs" style="margin-left:auto">Refresh</button></div>
+        <div class="tools" style="margin-bottom:.75rem">
+          <div class="field"><label for="logFrom">From</label><input id="logFrom" type="date"></div>
+          <div class="field"><label for="logTo">To</label><input id="logTo" type="date"></div>
+          <button class="ghost" type="button" id="downloadLogs">Download CSV for Excel</button>
+        </div>
+        <div class="tablebox" id="logTable"></div>
+      </div>
+    </div>
+
+    <!-- Performance -->
+    <div id="tab-performance" class="hidden">
+      <section class="performance-heading">
+        <div><p class="section-kicker"><span>02</span> TEAM INSIGHTS</p><h2>Performance reports</h2><p class="muted">Daily breach reporting from your team leads.</p></div>
+        <div class="date-range">
+          <div class="field"><label for="performanceFrom">From</label><input id="performanceFrom" type="date"></div>
+          <div class="field"><label for="performanceTo">To</label><input id="performanceTo" type="date"></div>
+          <button id="filterPerformance" type="button">Apply dates</button>
+        </div>
+      </section>
+      <div class="metric-strip" id="performanceMetrics" aria-live="polite"></div>
+      <section class="panel performance-panel"><div class="panel-heading"><h3>Submitted entries</h3><button id="refreshPerformance" class="button-quiet" type="button">Refresh</button></div><div class="tablebox" id="performanceTable"></div></section>
+    </div>
+
+    <!-- Account -->
+    <div id="tab-account" class="hidden">
+      <div class="panel" style="max-width:460px">
+        <h2>Change my admin password</h2>
+        <form id="pwForm">
+          <div class="field"><label for="pwCur">Current password</label><input id="pwCur" type="password" autocomplete="current-password" required></div>
+          <div class="field"><label for="pwNew">New password (10+ characters)</label><input id="pwNew" type="password" minlength="10" autocomplete="new-password" required></div>
+          <button type="submit">Change password</button>
+        </form>
+      </div>
+      <div class="panel" style="max-width:460px">
+        <h2>Late sign-in alert number</h2>
+        <form id="settingsForm">
+          <div class="field"><label for="adminPhone">Admin mobile number (international format)</label><input id="adminPhone" type="tel" placeholder="+919876543210" pattern="\+[1-9][0-9]{7,14}"></div>
+          <button type="submit">Save alert number</button>
+        </form>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- Face capture dialog -->
+<dialog id="faceDlg">
+  <h3 id="faceTitle">Enrol face</h3>
+  <p class="muted">Ask the team lead to look straight at the camera in good light, no mask or sunglasses.</p>
+  <div class="cam"><video id="faceVideo" playsinline muted></video><div class="ph" id="facePh">Starting camera…</div></div>
+  <div id="faceMsg" class="msg err hidden"></div>
+  <div class="tools"><button id="faceGo" type="button" disabled>Capture</button><button id="faceCancel" type="button" class="ghost">Cancel</button></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
+<script src="common.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

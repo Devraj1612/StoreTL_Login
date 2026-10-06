@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: store-tl-login
+    runtime: node
+    region: singapore
+    plan: starter
+    rootDir: store-tl-login
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    disk:
+      name: store-tl-login-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: APP_TIME_ZONE
+        value: Asia/Kolkata
+      - key: TRUST_PROXY
+        value: "1"
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

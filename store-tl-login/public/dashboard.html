@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team performance | Shadowfax</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="app-page">
+<header class="topbar">
+  <a class="brand-lockup" href="dashboard.html" aria-label="Shadowfax team dashboard"><img src="shadowfax-logo.svg" alt="Shadowfax, Think ahead!"></a>
+  <div class="topbar-actions"><span class="user-chip" id="who">Team lead</span><button id="out" class="button-light" type="button">Sign out</button></div>
+</header>
+<main class="dashboard-wrap">
+  <section class="dashboard-banner">
+    <div class="banner-copy">
+      <p class="eyebrow">STORE OPERATIONS <span id="todayLabel"></span></p>
+      <h1 id="hello">Your performance</h1>
+      <p id="where" class="banner-meta">Loading your store and shift…</p>
+    </div>
+    <div class="shift-display"><span class="shift-mark" aria-hidden="true"></span><div><span class="eyebrow">TODAY'S SHIFT</span><strong id="shiftName">Loading</strong></div></div>
+  </section>
+
+  <section class="team-summary" aria-label="Today's report summary">
+    <article class="summary-tile summary-state"><span class="summary-label">REPORT STATUS</span><strong id="reportStateValue">Loading</strong><small id="reportStateDetail">Checking today's entry</small></article>
+    <article class="summary-tile"><span class="summary-label">BREACH RECORDED</span><strong id="breachSummary">—</strong><small>For the selected report date</small></article>
+    <article class="summary-tile"><span class="summary-label">LAST SAVED</span><strong id="updatedSummary">—</strong><small>Updates are visible to your admin</small></article>
+  </section>
+
+  <section class="report-layout" aria-labelledby="reportHeading">
+    <div class="report-intro">
+      <div class="section-kicker"><span>01</span> DAILY REPORT</div>
+      <h2 id="reportHeading">Performance entry</h2>
+      <p class="muted">Record the day's breach percentage. Add the delay cause when there is a breach.</p>
+      <div class="report-rule"><span class="rule-symbol" aria-hidden="true">%</span><p><strong>One report per day.</strong><br>Submitting again updates that day's entry.</p></div>
+    </div>
+
+    <form class="report-form" id="performanceForm">
+      <div class="report-form-head">
+        <div class="field"><label for="reportDate">Report date</label><input id="reportDate" type="date" required></div>
+        <span class="saved-indicator" id="savedIndicator" aria-live="polite">No report for this date</span>
+      </div>
+      <div class="breach-field">
+        <div class="field breach-input-field"><label for="breachPercent">Breach percentage</label><div class="percent-input"><input id="breachPercent" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="0" required><span>%</span></div><small>Enter a value from 0 to 100.</small></div>
+        <div class="breach-meter" aria-hidden="true"><div class="meter-track"><span id="meterFill"></span></div><span id="meterValue">0% breach</span></div>
+      </div>
+      <div class="field" id="causeField"><label for="rootCause">Root cause analysis for the delay</label><textarea id="rootCause" rows="5" maxlength="2000" placeholder="What caused the delay? Include the main factor and any action taken."></textarea><div class="field-foot"><small>Required when breach is above 0%.</small><small><span id="charCount">0</span>/2000</small></div></div>
+      <div class="form-feedback hidden" id="formFeedback" role="status"></div>
+      <div class="form-submit"><span class="muted">Your report is visible to your admin.</span><button type="submit" id="saveReport">Save performance</button></div>
+    </form>
+  </section>
+</main>
+<script src="common.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
